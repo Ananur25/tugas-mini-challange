@@ -2,8 +2,8 @@
 // Data profil ini harus mencakup nama, peran, dan teknologi favorit pengguna. Endpoint ini akan diakses melalui URL /api/profile.
 export async function GET() {
   return Response.json({
-    name: "Savilla Tifania",
-    role: "peserta bootcamp",
-    favoriteTech: ["JavaScript", "Next.js", "Python"],
+    name: "Ana Nur Rani Hasanah",
+    role: "Peserta bootcamp",
+    favoriteTech: ["Mechine Learning", "Next.js", "Python", "Automation", "N8N"],
   });
 }

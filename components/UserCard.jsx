@@ -42,10 +42,9 @@ export default function UserCard({ user }) {
         <p className="truncate text-sm text-muted-foreground">
           {user.email}
         </p>
-
-        <p className="mt-1 truncate text-sm text-muted-foreground">
-          {user.company_name}
-        </p>
+        <h2 className="mt-1 truncate text-xl text-muted-foreground">
+          {user.company.name}
+        </h2>
 
         <div className="mt-4 flex gap-2">
           <Button className="flex-1 rounded-full">

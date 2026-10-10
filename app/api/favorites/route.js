@@ -5,7 +5,7 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  const body = await request.json();
+  const body = await request.json();  
   const result = await addFavorite(body);
 
   if (!result.success) {

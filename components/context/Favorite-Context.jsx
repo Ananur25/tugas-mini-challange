@@ -1,9 +1,10 @@
-// Update
-// BE 2 CRUD not using useState again, but using Context API to manage state globally
-// DB Live 2 Connect to Supabase
-"use client";
+'use client';
 
-import { createContext, useContext, useEffect, useState } from "react";
+// Update:
+// BE 2 CRUD using Context API to manage state globally
+// DB Live 2 Connect to Supabase
+
+import { createContext, useContext, useEffect, useState } from 'react';
 
 const FavoriteContext = createContext(undefined);
 
@@ -11,32 +12,45 @@ export function FavoriteProvider({ children }) {
   const [favorites, setFavorites] = useState([]);
 
   useEffect(() => {
+    let isMounted = true;
+
     async function loadFavorites() {
       try {
-        const res = await fetch("/api/favorites");
+        const res = await fetch('/api/favorites', {
+          method: 'GET',
+        });
+
+        const result = await res.json();
 
         if (!res.ok) {
-          throw new Error("Gagal mengambil data favorites");
+          console.error('Failed to load favorites:', result.error);
+          return;
         }
 
-        const data = await res.json();
+        const favoriteData = Array.isArray(result.data) ? result.data : [];
+        console.log(favoriteData)
 
-        setFavorites(Array.isArray(data) ? data : []);
+        if (isMounted) {
+          setFavorites(favoriteData);
+        }
       } catch (error) {
-        console.error("Failed to load favorites:", error);
-        setFavorites([]);
+        console.error('Failed to load favorites:', error);
       }
     }
 
     loadFavorites();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   async function addFavorite(user) {
     try {
-      const res = await fetch("/api/favorites", {
-        method: "POST",
+      const res = await fetch('/api/favorites', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(user),
       });
@@ -44,49 +58,73 @@ export function FavoriteProvider({ children }) {
       const result = await res.json();
 
       if (!res.ok) {
-        console.error("Failed to add favorite:", result.error);
-        return;
+        console.error('Failed to add favorite:', result.error);
+        return false;
       }
 
-      setFavorites((prev) => [...prev, result]);
+      const newFavorite = result.data ?? result;
+
+      if (!newFavorite?.id) {
+        console.error(
+          'Add favorite API did not return a favorite with an id:',
+          result
+        );
+        return false;
+      }
+
+      setFavorites((prev) => {
+        const alreadyExists = prev.some(
+          (favorite) => favorite.id === newFavorite.id
+        );
+
+        return alreadyExists ? prev : [...prev, newFavorite];
+      });
+
+      return true;
     } catch (error) {
-      console.error("Failed to add favorite:", error);
+      console.error('Failed to add favorite:', error);
+      return false;
     }
   }
 
-  async function removeFavorite(userId) {
+  async function removeFavorite(favoriteId) {
     try {
-      const res = await fetch(`/api/favorites/${userId}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(
+        `/api/favorites/${encodeURIComponent(favoriteId)}`,
+        {
+          method: 'DELETE',
+        }
+      );
 
       const result = await res.json();
 
       if (!res.ok) {
-        console.error("Failed to remove favorite:", result.error);
-        return;
+        console.error('Failed to remove favorite:', result.error);
+        return false;
       }
 
       setFavorites((prev) =>
-        prev.filter((favorite) => favorite.id !== userId)
+        prev.filter((favorite) => favorite.id !== favoriteId)
       );
+
+      return true;
     } catch (error) {
-      console.error("Failed to remove favorite:", error);
+      console.error('Failed to remove favorite:', error);
+      return false;
     }
   }
 
   function isFavorite(userId) {
-    return favorites.some(
-      (favorite) => favorite.id === userId
-    );
+    return favorites.some((favorite) => favorite.id === userId);
   }
+
 
   async function toggleFavorite(user) {
     if (isFavorite(user.id)) {
-      await removeFavorite(user.id);
-    } else {
-      await addFavorite(user);
+      return await removeFavorite(user.id);
     }
+
+    return await addFavorite(user);
   }
 
   const value = {
@@ -108,9 +146,7 @@ export function useFavorite() {
   const context = useContext(FavoriteContext);
 
   if (context === undefined) {
-    throw new Error(
-      "useFavorite harus dipakai di dalam <FavoriteProvider>"
-    );
+    throw new Error('useFavorite harus dipakai di dalam <FavoriteProvider>');
   }
 
   return context;
